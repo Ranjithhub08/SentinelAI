@@ -19,8 +19,9 @@ A production-grade Go backend for the SentinelAI API monitoring platform.
 
 This project strictly follows Clean Architecture principles to separate concerns efficiently.
 
-**Architecture Flow Diagram:**
-Auth → Monitor Service → Repository → WorkerPool → LLM → Repository Scheduler
+![Architecture](docs/architecture.png)
+
+The system leverages a modern Vite React frontend orchestrating traffic via a decoupled Go backend. Background Goroutines dynamically distribute health checks securely governed by a central Scheduler. When anomalies arise, isolated Ollama AI processes diagnose the precise failure, persisting synthesized explanations seamlessly into a PostgreSQL registry orchestrated entirely within Docker Compose.
 
 ### Module Structure
 
