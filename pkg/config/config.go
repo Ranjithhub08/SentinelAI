@@ -10,10 +10,11 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	Port          int
-	Env           string
-	JwtSecret     string
-	JwtExpiration int
+	Port              int
+	Env               string
+	JwtSecret         string
+	JwtExpiration     int
+	SchedulerInterval int
 }
 
 // Load reads configuration from .env file and environment variables
@@ -48,10 +49,18 @@ func Load() (*Config, error) {
 		return nil, errors.New("TOKEN_EXPIRATION must be a valid integer")
 	}
 
+	schedulerInterval := 1
+	if sIntStr := os.Getenv("SCHEDULER_INTERVAL"); sIntStr != "" {
+		if parsed, err := strconv.Atoi(sIntStr); err == nil && parsed > 0 {
+			schedulerInterval = parsed
+		}
+	}
+
 	return &Config{
-		Port:          port,
-		Env:           env,
-		JwtSecret:     jwtSecret,
-		JwtExpiration: jwtExp,
+		Port:              port,
+		Env:               env,
+		JwtSecret:         jwtSecret,
+		JwtExpiration:     jwtExp,
+		SchedulerInterval: schedulerInterval,
 	}, nil
 }

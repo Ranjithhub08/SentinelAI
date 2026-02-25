@@ -1,10 +1,23 @@
 # SentinelAI API Monitoring SaaS
 
-A production-grade Go backend for the SentinelAI platform.
+A production-grade Go backend for the SentinelAI API monitoring platform.
+
+## Current Features
+
+- JWT Authentication
+- Worker Pool Monitoring
+- Context-based Shutdown
+- Structured Logging
+- In-Memory Repository
 
 ## Architecture
 
-This project strictly follows Clean Architecture principles:
+This project strictly follows Clean Architecture principles to separate concerns efficiently.
+
+**Architecture Flow Diagram:**
+Auth → Monitor Service → Repository → WorkerPool → Scheduler
+
+### Module Structure
 
 - **cmd/**: Application entrypoints. `main.go` acts solely as the orchestrator to bootstrap configuration and dependencies.
 - **internal/**: Private application code strictly bounded within the module.
@@ -12,6 +25,7 @@ This project strictly follows Clean Architecture principles:
   - **service/**: Business logic layer.
   - **repository/**: Data access layer.
   - **auth/**: Independent authentication module (JWT, bcrypt).
+  - **monitor/**: Monitoring engine (Scheduler, Worker pool, Handlers).
   - **middleware/**: HTTP middlewares (logging, recovery, token validation, etc.).
   - **server/**: HTTP server setup and Dependency Injection container wiring.
 - **pkg/**: Public libraries that can be used by other applications (config, logger).
@@ -40,16 +54,16 @@ This project strictly follows Clean Architecture principles:
 
 ## Authentication Module
 
-The system utilizes an independent authentication module leveraging **bcrypt** for secure password hashing and **JWT (JSON Web Tokens)** for stateless session management.
+The system utilizes an independent authentication module leveraging bcrypt for secure password hashing and JWT (JSON Web Tokens) for stateless session management.
 
 Once a user logs in, a signed JWT token is returned. This token must be provided in the `Authorization` header as a Bearer token (`Authorization: Bearer <token>`) for subsequent protected API requests. The included JWT middleware securely decodes, validates expiration, and extracts user claims.
 
-### API Endpoints
+### Auth API Endpoints
 
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
 
-### Example API Usage
+### Example Auth Usage
 
 **Register a new user:**
 ```sh
@@ -63,6 +77,46 @@ curl -X POST "http://localhost:8080/api/v1/auth/register" \
 curl -X POST "http://localhost:8080/api/v1/auth/login" \
  -H "Content-Type: application/json" \
  -d '{"email": "engineer@sentinelai.com", "password": "securepassword123"}'
+```
+
+## Monitoring Engine Overview
+
+The monitoring module handles the periodic execution of health checks against user-registered target URLs.
+
+### Worker Pool Architecture
+
+Operations are distributed via a fixed-size worker pool design using channel-based concurrency. Configurable goroutine workers are spawned on application startup to ingest HTTP health check jobs dynamically from a buffered job channel, enforcing resource predictability and isolating request latencies.
+
+### Scheduler Explanation
+
+A dedicated background scheduler runs concurrently on a configurable duration interval. Upon each tick, it loops through active monitors stored in the repository, validates intervals and active status constraints, and places viable jobs onto the unified worker pool channel.
+
+### Concurrency Safety Design
+
+- Context management governs the background loops for seamless runtime shutdowns.
+- Internal state variables (`IsRunning`) lock specific health check targets to prevent redundant evaluations or race conditions.
+- Deep-copy abstractions act as serialization safeguards over in-memory structs accessed during concurrent read/write operations spanning the worker pool, preventing panics and logic collision.
+- Panic recovery mechanism encapsulates jobs bounding fault-tolerance explicitly to broken operations.
+
+### JWT-Protected Monitor Endpoints
+
+- `POST /api/v1/monitor/add`
+- `GET /api/v1/monitor/list`
+
+### Example Monitor Usage
+
+**Add a new monitor (Requires JWT):**
+```sh
+curl -X POST "http://localhost:8080/api/v1/monitor/add" \
+ -H "Authorization: Bearer <token>" \
+ -H "Content-Type: application/json" \
+ -d '{"url": "https://api.example.com/health", "interval": 60}'
+```
+
+**List all user monitors (Requires JWT):**
+```sh
+curl -X GET "http://localhost:8080/api/v1/monitor/list" \
+ -H "Authorization: Bearer <token>"
 ```
 
 ## API Response Format
@@ -79,12 +133,13 @@ All REST endpoints strictly adhere to the following standard JSON response struc
 
 ## Environment Variables
 
-| Variable | Description | Default / Example |
+| Variable | Description | Default |
 |---|---|---|
 | `PORT` | Port the HTTP server binds to. | `8080` |
 | `ENV` | Environment state (`development`, `production`). | `development` |
 | `JWT_SECRET` | Secret key used for cryptographic JWT signing and verification. | `super-secret-local-dev-key` |
 | `TOKEN_EXPIRATION` | Number of hours before the issued JWT token expires. | `24` |
+| `SCHEDULER_INTERVAL` | Interval logic tick evaluation loop duration in seconds. | `1` |
 
 ## CI/CD Workflow
 

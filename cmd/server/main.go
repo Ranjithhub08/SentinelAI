@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ranjithkumar/sentinelai/internal/monitor"
 	"github.com/ranjithkumar/sentinelai/internal/server"
 	"github.com/ranjithkumar/sentinelai/pkg/config"
 	"github.com/ranjithkumar/sentinelai/pkg/logger"
@@ -33,6 +34,15 @@ func main() {
 		zlog.Fatal("Failed to initialize dependency container", zap.Error(err))
 	}
 
+	engineCtx, engineCancel := context.WithCancel(context.Background())
+	defer engineCancel()
+
+	workerPool := monitor.NewWorkerPool(10, container.MonitorRepo, zlog)
+	workerPool.Start(engineCtx)
+
+	scheduler := monitor.NewScheduler(container.MonitorRepo, workerPool, zlog, cfg.SchedulerInterval)
+	scheduler.Start(engineCtx)
+
 	srv := server.New(cfg, zlog, container)
 
 	go func() {
@@ -46,6 +56,7 @@ func main() {
 	<-quit
 
 	zlog.Info("Shutdown signal received")
+	engineCancel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
