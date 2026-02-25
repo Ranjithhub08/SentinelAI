@@ -17,6 +17,11 @@ type Config struct {
 	SchedulerInterval int
 	OllamaURL         string
 	LLMModel          string
+	DBHost            string
+	DBPort            string
+	DBUser            string
+	DBPassword        string
+	DBName            string
 }
 
 // Load reads configuration from .env file and environment variables
@@ -76,5 +81,10 @@ func Load() (*Config, error) {
 		SchedulerInterval: schedulerInterval,
 		OllamaURL:         ollamaURL,
 		LLMModel:          llmModel,
+		DBHost:            os.Getenv("DB_HOST"),
+		DBPort:            os.Getenv("DB_PORT"),
+		DBUser:            os.Getenv("DB_USER"),
+		DBPassword:        os.Getenv("DB_PASSWORD"),
+		DBName:            os.Getenv("DB_NAME"),
 	}, nil
 }

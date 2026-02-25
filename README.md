@@ -12,7 +12,8 @@ A production-grade Go backend for the SentinelAI API monitoring platform.
 - Panic recovery
 - Context-based graceful shutdown
 - Structured Logging
-- In-Memory Repository
+- Pluggable Repositories (PostgreSQL & In-Memory options)
+- Docker integration
 
 ## Architecture
 
@@ -39,7 +40,9 @@ Auth → Monitor Service → Repository → WorkerPool → LLM → Repository Sc
 
 - [Go 1.23+](https://go.dev/dl/)
 - Make
+- [Docker] (Optional, for containerized DB/Service deployments)
 - [Ollama](https://ollama.com/) (Optional, required for LLM analysis features)
+- [PostgreSQL] (Optional, for persistent storage)
 
 ## Getting Started
 
@@ -47,16 +50,26 @@ Auth → Monitor Service → Repository → WorkerPool → LLM → Repository Sc
    ```sh
    cp .env.example .env
    ```
+   *Note: .env configures external DB access. Do not commit it to version control!*
 
 2. Install dependencies:
    ```sh
    go mod tidy
    ```
 
-3. Run the development server:
+3. Run the development server (Defaults to in-memory storage unless DB_HOST is populated):
    ```sh
    make run
    ```
+
+### Docker Deployment
+
+SentinelAI uses a multi-stage `Dockerfile` and `docker-compose.yml` to effortlessly spin up a unified containerized PostgreSQL 15 database running seamlessly alongside the latest Go backend binary.
+
+Spin up the entire stack seamlessly:
+```sh
+docker-compose up -d --build
+```
 
 ## Authentication Module
 
@@ -182,6 +195,11 @@ All REST endpoints strictly adhere to the following standard JSON response struc
 | `SCHEDULER_INTERVAL` | Interval logic tick evaluation loop duration in seconds. | `1` |
 | `OLLAMA_URL` | Local LLM host URL mapping. | `http://localhost:11434/api/generate` |
 | `LLM_MODEL` | Machine learning model invoked for failure parsing. | `llama3` |
+| `DB_HOST` | PostgreSQL Hostname (triggers postgres injection). | `postgres` / `localhost` |
+| `DB_PORT` | PostgreSQL connection port. | `5432` |
+| `DB_USER` | PostgreSQL active role context. | `postgres` |
+| `DB_PASSWORD` | PostgreSQL active role password. | `postgres` |
+| `DB_NAME` | Initialized backend storage database namespace. | `sentinel` |
 
 ## CI/CD Workflow
 

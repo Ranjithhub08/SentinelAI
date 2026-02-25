@@ -18,9 +18,10 @@ type Job struct {
 type WorkerPool struct {
 	numWorkers int
 	jobChan    chan Job
-	repo       Repository
-	logger     *zap.Logger
-	llm        llm.Provider
+
+	repo   Repository
+	logger *zap.Logger
+	llm    llm.Provider
 }
 
 // NewWorkerPool creates a new monitor worker pool

@@ -30,7 +30,7 @@ func main() {
 		_ = zlog.Sync()
 	}()
 
-	container, err := server.NewContainer()
+	container, err := server.NewContainer(cfg)
 	if err != nil {
 		zlog.Fatal("Failed to initialize dependency container", zap.Error(err))
 	}
