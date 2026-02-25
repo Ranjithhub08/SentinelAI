@@ -9,8 +9,10 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	Port int
-	Env  string
+	Port          int
+	Env           string
+	JwtSecret     string
+	JwtExpiration int
 }
 
 // Load reads configuration from .env file and environment variables
@@ -29,8 +31,22 @@ func Load() (*Config, error) {
 		env = "development"
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "super-secret-key-for-local-dev-only"
+	}
+
+	jwtExp := 24
+	if e := os.Getenv("JWT_EXPIRATION_HOURS"); e != "" {
+		if parsed, err := strconv.Atoi(e); err == nil {
+			jwtExp = parsed
+		}
+	}
+
 	return &Config{
-		Port: port,
-		Env:  env,
+		Port:          port,
+		Env:           env,
+		JwtSecret:     jwtSecret,
+		JwtExpiration: jwtExp,
 	}, nil
 }

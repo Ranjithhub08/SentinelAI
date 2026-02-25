@@ -10,6 +10,7 @@ This project strictly follows Clean Architecture principles:
   - **handler/**: HTTP request handlers (presentation layer).
   - **service/**: Business logic layer.
   - **repository/**: Data access layer.
+  - **auth/**: Independent authentication module (JWT, bcrypt).
   - **server/**: HTTP server and dependency injection setup.
   - **middleware/**: HTTP middlewares (logging, recovery, etc.).
 - **pkg/**: Public libraries that can be used by other applications (config, logger).
@@ -47,6 +48,22 @@ This project strictly follows Clean Architecture principles:
    ```sh
    make test
    ```
+
+## Example API Usage
+
+**1. Register a new user:**
+```sh
+curl -X POST "http://localhost:8080/api/v1/auth/register" \
+ -H "Content-Type: application/json" \
+ -d '{"email": "engineer@sentinelai.com", "password": "securepassword123"}'
+```
+
+**2. Login to receive JWT token:**
+```sh
+curl -X POST "http://localhost:8080/api/v1/auth/login" \
+ -H "Content-Type: application/json" \
+ -d '{"email": "engineer@sentinelai.com", "password": "securepassword123"}'
+```
 
 ## Development & CI/CD Workflow
 

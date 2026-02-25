@@ -2,13 +2,15 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/ranjithkumar/sentinelai/internal/auth"
 	"github.com/ranjithkumar/sentinelai/internal/handler"
 	"github.com/ranjithkumar/sentinelai/internal/middleware"
+	"github.com/ranjithkumar/sentinelai/pkg/config"
 	"go.uber.org/zap"
 )
 
 // SetupRouter configures the HTTP router and registers routes
-func SetupRouter(logger *zap.Logger, container *Container) *gin.Engine {
+func SetupRouter(cfg *config.Config, logger *zap.Logger, container *Container) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
@@ -16,10 +18,17 @@ func SetupRouter(logger *zap.Logger, container *Container) *gin.Engine {
 	r.Use(middleware.Logger(logger), gin.Recovery())
 
 	healthHandler := handler.NewHealthHandler()
+	authHandler := auth.NewHandler(container.AuthSvc, cfg)
 
 	v1 := r.Group("/api/v1")
 	{
 		v1.GET("/health", healthHandler.Check)
+
+		authGroup := v1.Group("/auth")
+		{
+			authGroup.POST("/register", authHandler.Register)
+			authGroup.POST("/login", authHandler.Login)
+		}
 	}
 
 	return r

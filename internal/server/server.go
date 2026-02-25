@@ -17,7 +17,7 @@ type Server struct {
 
 // New creates a new HTTP server instance
 func New(cfg *config.Config, logger *zap.Logger, container *Container) *Server {
-	router := SetupRouter(logger, container)
+	router := SetupRouter(cfg, logger, container)
 
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
