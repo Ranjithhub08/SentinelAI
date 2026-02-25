@@ -1,6 +1,6 @@
 import { Outlet, Navigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LogOut, LayoutDashboard, Activity, Settings } from "lucide-react";
+import { LogOut, LayoutDashboard, Activity } from "lucide-react";
 
 export default function DashboardLayout() {
     const { isAuthenticated, logout } = useAuth();
@@ -12,8 +12,6 @@ export default function DashboardLayout() {
 
     const navItems = [
         { name: "Dashboard", href: "/", icon: LayoutDashboard },
-        { name: "Monitors", href: "/", icon: Activity },
-        { name: "Settings", href: "/", icon: Settings },
     ];
 
     return (
@@ -32,8 +30,8 @@ export default function DashboardLayout() {
                                 key={item.name}
                                 to={item.href}
                                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive
-                                        ? "bg-primary/10 text-primary font-medium"
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                    ? "bg-primary/10 text-primary font-medium"
+                                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                                     }`}
                             >
                                 <item.icon className="h-4 w-4" />
