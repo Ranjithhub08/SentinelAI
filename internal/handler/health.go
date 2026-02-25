@@ -17,6 +17,10 @@ func NewHealthHandler() *HealthHandler {
 // Check returns the application health status
 func (h *HealthHandler) Check(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"status": "up",
+		"success": true,
+		"message": "health check passed",
+		"data": gin.H{
+			"status": "up",
+		},
 	})
 }

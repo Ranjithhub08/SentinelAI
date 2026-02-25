@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"strconv"
 
@@ -19,11 +20,13 @@ type Config struct {
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 
-	port := 8080
-	if p := os.Getenv("PORT"); p != "" {
-		if parsed, err := strconv.Atoi(p); err == nil {
-			port = parsed
-		}
+	portStr := os.Getenv("PORT")
+	if portStr == "" {
+		return nil, errors.New("PORT environment variable is required")
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return nil, errors.New("PORT must be a valid integer")
 	}
 
 	env := os.Getenv("ENV")
@@ -33,14 +36,16 @@ func Load() (*Config, error) {
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "super-secret-key-for-local-dev-only"
+		return nil, errors.New("JWT_SECRET environment variable is required")
 	}
 
-	jwtExp := 24
-	if e := os.Getenv("JWT_EXPIRATION_HOURS"); e != "" {
-		if parsed, err := strconv.Atoi(e); err == nil {
-			jwtExp = parsed
-		}
+	jwtExpStr := os.Getenv("TOKEN_EXPIRATION")
+	if jwtExpStr == "" {
+		return nil, errors.New("TOKEN_EXPIRATION environment variable is required")
+	}
+	jwtExp, err := strconv.Atoi(jwtExpStr)
+	if err != nil {
+		return nil, errors.New("TOKEN_EXPIRATION must be a valid integer")
 	}
 
 	return &Config{

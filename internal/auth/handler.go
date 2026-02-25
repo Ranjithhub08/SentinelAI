@@ -22,23 +22,24 @@ func NewHandler(svc Service, cfg *config.Config) *Handler {
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request data", "data": nil})
 		return
 	}
 
 	user, err := h.svc.Register(c.Request.Context(), req)
 	if err != nil {
 		if err == ErrUserExists {
-			c.JSON(http.StatusConflict, gin.H{"error": "user already exists"})
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "user already exists", "data": nil})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to register user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to register user", "data": nil})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
 		"message": "registration successful",
-		"user":    user,
+		"data":    user,
 	})
 }
 
@@ -46,18 +47,19 @@ func (h *Handler) Register(c *gin.Context) {
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request data"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request data", "data": nil})
 		return
 	}
 
 	token, err := h.svc.Login(c.Request.Context(), req, h.cfg.JwtSecret, h.cfg.JwtExpiration)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "invalid credentials", "data": nil})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"success": true,
 		"message": "login successful",
-		"token":   token,
+		"data":    gin.H{"token": token},
 	})
 }
