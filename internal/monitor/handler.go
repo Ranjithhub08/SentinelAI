@@ -2,9 +2,39 @@ package monitor
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// MonitorResponse is the DTO used to shape the API response
+type MonitorResponse struct {
+	ID            string    `json:"id"`
+	UserID        string    `json:"user_id"`
+	URL           string    `json:"url"`
+	Interval      int64     `json:"interval"`
+	LastChecked   time.Time `json:"last_checked"`
+	StatusCode    int       `json:"status_code"`
+	ResponseTime  int64     `json:"response_time"`
+	IsHealthy     bool      `json:"is_healthy"`
+	IsRunning     bool      `json:"is_running"`
+	AIExplanation string    `json:"ai_explanation,omitempty"`
+}
+
+func mapToResponse(m *Monitor) MonitorResponse {
+	return MonitorResponse{
+		ID:            m.ID,
+		UserID:        m.UserID,
+		URL:           m.URL,
+		Interval:      int64(m.Interval),
+		LastChecked:   m.LastChecked,
+		StatusCode:    m.StatusCode,
+		ResponseTime:  m.ResponseTime.Milliseconds(),
+		IsHealthy:     m.IsHealthy,
+		IsRunning:     m.IsRunning,
+		AIExplanation: m.AIExplanation,
+	}
+}
 
 // Handler processes HTTP monitoring actions
 type Handler struct {
@@ -39,7 +69,7 @@ func (h *Handler) Add(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "monitor added successfully",
-		"data":    m,
+		"data":    mapToResponse(m),
 	})
 }
 
@@ -57,9 +87,14 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 
+	var responseData []MonitorResponse
+	for _, m := range monitors {
+		responseData = append(responseData, mapToResponse(m))
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "monitors retrieved",
-		"data":    monitors,
+		"data":    responseData,
 	})
 }
