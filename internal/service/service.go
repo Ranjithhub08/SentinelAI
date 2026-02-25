@@ -4,7 +4,6 @@ import "github.com/ranjithkumar/sentinelai/internal/repository"
 
 // Service defines the interface for business logic
 type Service interface {
-	// Add business logic methods here later
 }
 
 type serviceImpl struct {

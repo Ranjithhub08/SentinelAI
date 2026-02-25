@@ -13,10 +13,7 @@ type Container struct {
 
 // NewContainer initializes and wires dependencies
 func NewContainer() (*Container, error) {
-	// Initialize repository
 	repo := repository.New()
-
-	// Initialize service with repository injected
 	svc := service.New(repo)
 
 	return &Container{

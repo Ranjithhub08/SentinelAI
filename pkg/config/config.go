@@ -15,7 +15,6 @@ type Config struct {
 
 // Load reads configuration from .env file and environment variables
 func Load() (*Config, error) {
-	// Ignore error as .env might not exist in production
 	_ = godotenv.Load()
 
 	port := 8080
