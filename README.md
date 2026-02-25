@@ -71,6 +71,23 @@ Spin up the entire stack seamlessly:
 docker-compose up -d --build
 ```
 
+### Frontend Deployment
+
+The modern frontend utilizes Vite, React, TypeScript, and Tailwind CSS.
+It securely maps interactions over a proxy configuration targeting the Go backend on port `8080`, and natively serves over port `3000`.
+
+**Development**
+```sh
+cd frontend
+npm install
+npm run dev
+```
+
+**Production Build**
+```sh
+npm run build
+```
+
 ## Authentication Module
 
 The system utilizes an independent authentication module leveraging bcrypt for secure password hashing and JWT (JSON Web Tokens) for stateless session management.
