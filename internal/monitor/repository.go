@@ -12,7 +12,7 @@ type Repository interface {
 	Add(ctx context.Context, m *Monitor) error
 	List(ctx context.Context, userID string) ([]*Monitor, error)
 	GetAll(ctx context.Context) ([]*Monitor, error)
-	UpdateStatus(ctx context.Context, id string, lastChecked time.Time, statusCode int, responseTime time.Duration, isHealthy bool) error
+	UpdateStatus(ctx context.Context, id string, lastChecked time.Time, statusCode int, responseTime time.Duration, isHealthy bool, aiExplanation string) error
 	SetRunning(ctx context.Context, id string, isRunning bool) error
 }
 
@@ -72,7 +72,7 @@ func (r *inMemoryRepository) GetAll(ctx context.Context) ([]*Monitor, error) {
 	return result, nil
 }
 
-func (r *inMemoryRepository) UpdateStatus(ctx context.Context, id string, lastChecked time.Time, statusCode int, responseTime time.Duration, isHealthy bool) error {
+func (r *inMemoryRepository) UpdateStatus(ctx context.Context, id string, lastChecked time.Time, statusCode int, responseTime time.Duration, isHealthy bool, aiExplanation string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -85,6 +85,7 @@ func (r *inMemoryRepository) UpdateStatus(ctx context.Context, id string, lastCh
 	m.StatusCode = statusCode
 	m.ResponseTime = responseTime
 	m.IsHealthy = isHealthy
+	m.AIExplanation = aiExplanation
 
 	return nil
 }

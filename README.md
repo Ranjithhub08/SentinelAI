@@ -6,7 +6,11 @@ A production-grade Go backend for the SentinelAI API monitoring platform.
 
 - JWT Authentication
 - Worker Pool Monitoring
-- Context-based Shutdown
+- AI-based failure analysis using Ollama
+- Configurable LLM provider
+- Concurrency-safe worker pool
+- Panic recovery
+- Context-based graceful shutdown
 - Structured Logging
 - In-Memory Repository
 
@@ -15,7 +19,7 @@ A production-grade Go backend for the SentinelAI API monitoring platform.
 This project strictly follows Clean Architecture principles to separate concerns efficiently.
 
 **Architecture Flow Diagram:**
-Auth → Monitor Service → Repository → WorkerPool → Scheduler
+Auth → Monitor Service → Repository → WorkerPool → LLM → Repository Scheduler
 
 ### Module Structure
 
@@ -26,6 +30,7 @@ Auth → Monitor Service → Repository → WorkerPool → Scheduler
   - **repository/**: Data access layer.
   - **auth/**: Independent authentication module (JWT, bcrypt).
   - **monitor/**: Monitoring engine (Scheduler, Worker pool, Handlers).
+  - **llm/**: AI integration for failure analysis (`Ollama`).
   - **middleware/**: HTTP middlewares (logging, recovery, token validation, etc.).
   - **server/**: HTTP server setup and Dependency Injection container wiring.
 - **pkg/**: Public libraries that can be used by other applications (config, logger).
@@ -34,6 +39,7 @@ Auth → Monitor Service → Repository → WorkerPool → Scheduler
 
 - [Go 1.23+](https://go.dev/dl/)
 - Make
+- [Ollama](https://ollama.com/) (Optional, required for LLM analysis features)
 
 ## Getting Started
 
@@ -119,6 +125,40 @@ curl -X GET "http://localhost:8080/api/v1/monitor/list" \
  -H "Authorization: Bearer <token>"
 ```
 
+## AI-Powered Failure Analysis
+
+### Ollama Integration Overview
+
+The backend incorporates local Large Language Model operations executing isolated anomaly explanation queries completely free from external cloud API dependencies. Through structured abstraction, the unified `llm.Provider` interface abstracts away direct bindings natively resolving HTTP context bridging safely.
+
+### How LLM is triggered on monitor failure
+
+When the background worker pool encounters an implicit connection termination (`err != nil`) or registers a failing HTTP boundary (`status >= 400`), the worker halts positive assertion workflows and transmits the exact request metrics (Timestamp, Latency, Status Code) into an isolated `AnalyzeFailure` execution sandbox. It bounds this contextually up to 10 seconds locally to preserve core concurrency pools without risk of starvation deadlocks bridging the returned text strings safely inside the generic repository mapping.
+
+### Example Monitor Failure with AI Explanation
+
+When hitting the `/list` endpoint following a timeout event on a registered URL, the AI Explanation output mimics this natively:
+```json
+{
+  "success": true,
+  "message": "monitors retrieved",
+  "data": [
+    {
+      "id": "20231105000000000",
+      "user_id": "user-uuid",
+      "url": "https://unreachable.application.local",
+      "interval": 60000000000,
+      "last_checked": "2023-11-05T12:00:00Z",
+      "status_code": 0,
+      "response_time": 10000000000,
+      "is_healthy": false,
+      "is_running": false,
+      "ai_explanation": "The failure strongly points to a domain resolution gap or a severe localized routing disruption given the zeroed status code and exact 10-second timeout ceiling termination."
+    }
+  ]
+}
+```
+
 ## API Response Format
 
 All REST endpoints strictly adhere to the following standard JSON response structure, ensuring explicit application context for client integrations:
@@ -140,6 +180,8 @@ All REST endpoints strictly adhere to the following standard JSON response struc
 | `JWT_SECRET` | Secret key used for cryptographic JWT signing and verification. | `super-secret-local-dev-key` |
 | `TOKEN_EXPIRATION` | Number of hours before the issued JWT token expires. | `24` |
 | `SCHEDULER_INTERVAL` | Interval logic tick evaluation loop duration in seconds. | `1` |
+| `OLLAMA_URL` | Local LLM host URL mapping. | `http://localhost:11434/api/generate` |
+| `LLM_MODEL` | Machine learning model invoked for failure parsing. | `llama3` |
 
 ## CI/CD Workflow
 

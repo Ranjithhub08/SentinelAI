@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ranjithkumar/sentinelai/internal/llm"
 	"github.com/ranjithkumar/sentinelai/internal/monitor"
 	"github.com/ranjithkumar/sentinelai/internal/server"
 	"github.com/ranjithkumar/sentinelai/pkg/config"
@@ -37,7 +38,9 @@ func main() {
 	engineCtx, engineCancel := context.WithCancel(context.Background())
 	defer engineCancel()
 
-	workerPool := monitor.NewWorkerPool(10, container.MonitorRepo, zlog)
+	llmProvider := llm.NewOllamaProvider(cfg.OllamaURL, cfg.LLMModel)
+
+	workerPool := monitor.NewWorkerPool(10, container.MonitorRepo, zlog, llmProvider)
 	workerPool.Start(engineCtx)
 
 	scheduler := monitor.NewScheduler(container.MonitorRepo, workerPool, zlog, cfg.SchedulerInterval)

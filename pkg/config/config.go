@@ -15,6 +15,8 @@ type Config struct {
 	JwtSecret         string
 	JwtExpiration     int
 	SchedulerInterval int
+	OllamaURL         string
+	LLMModel          string
 }
 
 // Load reads configuration from .env file and environment variables
@@ -56,11 +58,23 @@ func Load() (*Config, error) {
 		}
 	}
 
+	ollamaURL := os.Getenv("OLLAMA_URL")
+	if ollamaURL == "" {
+		ollamaURL = "http://localhost:11434/api/generate"
+	}
+
+	llmModel := os.Getenv("LLM_MODEL")
+	if llmModel == "" {
+		llmModel = "llama3"
+	}
+
 	return &Config{
 		Port:              port,
 		Env:               env,
 		JwtSecret:         jwtSecret,
 		JwtExpiration:     jwtExp,
 		SchedulerInterval: schedulerInterval,
+		OllamaURL:         ollamaURL,
+		LLMModel:          llmModel,
 	}, nil
 }

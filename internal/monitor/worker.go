@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ranjithkumar/sentinelai/internal/llm"
 	"go.uber.org/zap"
 )
 
@@ -19,15 +20,17 @@ type WorkerPool struct {
 	jobChan    chan Job
 	repo       Repository
 	logger     *zap.Logger
+	llm        llm.Provider
 }
 
 // NewWorkerPool creates a new monitor worker pool
-func NewWorkerPool(numWorkers int, repo Repository, logger *zap.Logger) *WorkerPool {
+func NewWorkerPool(numWorkers int, repo Repository, logger *zap.Logger, llmProvider llm.Provider) *WorkerPool {
 	return &WorkerPool{
 		numWorkers: numWorkers,
 		jobChan:    make(chan Job, 1000), // Buffer jobs
 		repo:       repo,
 		logger:     logger,
+		llm:        llmProvider,
 	}
 }
 
@@ -54,7 +57,10 @@ func (wp *WorkerPool) worker(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case job := <-wp.jobChan:
+		case job, ok := <-wp.jobChan:
+			if !ok {
+				return
+			}
 			wp.safeProcessJob(ctx, client, job)
 		}
 	}
@@ -75,7 +81,7 @@ func (wp *WorkerPool) processJob(ctx context.Context, client *http.Client, job J
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, job.Monitor.URL, nil)
 	if err != nil {
-		_ = wp.repo.UpdateStatus(ctx, job.Monitor.ID, time.Now(), 0, 0, false)
+		_ = wp.repo.UpdateStatus(ctx, job.Monitor.ID, time.Now(), 0, 0, false, "")
 		wp.logger.Error("Failed to create request", zap.Error(err), zap.String("url", job.Monitor.URL))
 		return
 	}
@@ -83,15 +89,23 @@ func (wp *WorkerPool) processJob(ctx context.Context, client *http.Client, job J
 	res, err := client.Do(req)
 	duration := time.Since(start)
 
+	now := time.Now()
+
 	if err != nil {
-		_ = wp.repo.UpdateStatus(ctx, job.Monitor.ID, time.Now(), 0, duration, false)
+		explanation := wp.getAIExplanation(ctx, job.Monitor.URL, 0, duration, now)
+		_ = wp.repo.UpdateStatus(ctx, job.Monitor.ID, now, 0, duration, false, explanation)
 		wp.logger.Warn("Health check unreachable", zap.Error(err), zap.String("url", job.Monitor.URL))
 		return
 	}
 	defer res.Body.Close()
 
-	isHealthy := res.StatusCode >= 200 && res.StatusCode < 500
-	_ = wp.repo.UpdateStatus(ctx, job.Monitor.ID, time.Now(), res.StatusCode, duration, isHealthy)
+	isHealthy := res.StatusCode >= 200 && res.StatusCode < 400
+	explanation := ""
+	if !isHealthy {
+		explanation = wp.getAIExplanation(ctx, job.Monitor.URL, res.StatusCode, duration, now)
+	}
+
+	_ = wp.repo.UpdateStatus(ctx, job.Monitor.ID, now, res.StatusCode, duration, isHealthy, explanation)
 
 	wp.logger.Info("Health check executed",
 		zap.String("monitor_id", job.Monitor.ID),
@@ -100,4 +114,29 @@ func (wp *WorkerPool) processJob(ctx context.Context, client *http.Client, job J
 		zap.Duration("latency", duration),
 		zap.Bool("healthy", isHealthy),
 	)
+}
+
+func (wp *WorkerPool) getAIExplanation(ctx context.Context, url string, statusCode int, duration time.Duration, timestamp time.Time) string {
+	if wp.llm == nil {
+		return ""
+	}
+
+	input := llm.FailureInput{
+		URL:          url,
+		StatusCode:   statusCode,
+		ResponseTime: duration,
+		Timestamp:    timestamp,
+	}
+
+	// Internal timeout specifically for LLM analysis so it doesn't block worker
+	llmCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	explanation, err := wp.llm.AnalyzeFailure(llmCtx, input)
+	if err != nil {
+		wp.logger.Warn("LLM analysis failed", zap.Error(err), zap.String("url", url))
+		return ""
+	}
+
+	return explanation
 }
