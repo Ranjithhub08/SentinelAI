@@ -2,6 +2,8 @@ package monitor
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"time"
 )
 
@@ -46,5 +48,9 @@ func (s *serviceImpl) List(ctx context.Context, userID string) ([]*Monitor, erro
 }
 
 func generateID() string {
-	return time.Now().Format("20060102150405000") // simple mock ID generator
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return time.Now().Format("20060102150405000")
+	}
+	return hex.EncodeToString(b)
 }

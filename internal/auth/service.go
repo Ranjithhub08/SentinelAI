@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -69,5 +71,10 @@ func (s *serviceImpl) Login(ctx context.Context, req LoginReq, secret string, ex
 }
 
 func generateID() string {
-	return time.Now().Format("20060102150405")
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		// fallback to time-based if crypto/rand fails
+		return time.Now().Format("20060102150405000")
+	}
+	return hex.EncodeToString(b)
 }
