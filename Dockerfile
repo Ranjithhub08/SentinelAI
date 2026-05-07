@@ -17,7 +17,7 @@ COPY . .
 RUN CGO_ENABLED=0 make build
 
 # Final Stage
-FROM alpine:latest
+FROM alpine:3.21
 
 WORKDIR /app
 
